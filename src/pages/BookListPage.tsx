@@ -25,27 +25,50 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
   );
   const status = useSelector((state: RootState) => state.books.status);
   const error = useSelector((state: RootState) => state.books.error);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   useEffect(() => {
     if (debouncedSearchTerm) {
       dispatch(
-        fetchBooksAsync({ query: debouncedSearchTerm, startIndex: page * 10 })
+        fetchBooksAsync({
+          query: debouncedSearchTerm,
+          startIndex: page * itemsPerPage,
+        })
       );
     }
   }, [debouncedSearchTerm, page, dispatch]);
 
-  const handleNextPage = () => {
-    if (books.length < totalItems) {
-      setPage(page + 1);
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setPage(newPage);
     }
   };
 
-  const handlePrevPage = () => {
-    if (page > 0) {
-      setPage(page - 1);
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 0; i < totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (page <= 2) {
+        pages.push(0, 1, 2, 3, 4);
+      } else if (page >= totalPages - 3) {
+        pages.push(
+          totalPages - 5,
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1
+        );
+      } else {
+        pages.push(page - 2, page - 1, page, page + 1, page + 2);
+      }
     }
+    return pages;
   };
-  console.log({ books });
+
   return (
     <div className="p-4">
       <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
@@ -57,10 +80,37 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
         error={error}
       />
       <div className="flex justify-between mt-4">
-        <button onClick={handlePrevPage} disabled={page === 0}>
+        <button
+          onClick={() => handlePageChange(page - 1)}
+          disabled={page === 0}
+        >
           Previous
         </button>
-        <button onClick={handleNextPage} disabled={books.length >= totalItems}>
+        <div>
+          {page > 2 && totalPages > 5 && (
+            <button onClick={() => handlePageChange(0)}>1</button>
+          )}
+          {page > 2 && totalPages > 5 && <span>...</span>}
+          {getPageNumbers().map((pageNumber) => (
+            <button
+              key={pageNumber}
+              onClick={() => handlePageChange(pageNumber)}
+              className={`mx-1 ${page === pageNumber ? "font-bold" : ""}`}
+            >
+              {pageNumber + 1}
+            </button>
+          ))}
+          {page < totalPages - 3 && totalPages > 5 && <span>...</span>}
+          {page < totalPages - 3 && totalPages > 5 && (
+            <button onClick={() => handlePageChange(totalPages - 1)}>
+              {totalPages}
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => handlePageChange(page + 1)}
+          disabled={page === totalPages - 1}
+        >
           Next
         </button>
       </div>

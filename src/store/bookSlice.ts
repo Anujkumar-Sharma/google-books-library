@@ -17,8 +17,15 @@ const initialState: BooksState = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const fetchBooksAsync: any = createAsyncThunk(
   "books/fetchBooks",
-  async (query: string) => {
-    const response = await fetchBooks(query);
+  async ({
+    query,
+    startIndex,
+  }: {
+    query: string;
+    startIndex: number;
+    maxCount?: number;
+  }) => {
+    const response = await fetchBooks(query, startIndex);
     console.log({ response });
     return { query, books: response };
   }
@@ -35,12 +42,9 @@ const booksSlice = createSlice({
       })
       .addCase(
         fetchBooksAsync.fulfilled,
-        (
-          state,
-          action: PayloadAction<{ query: { query: string }; books: Book[] }>
-        ) => {
+        (state, action: PayloadAction<{ query: string; books: Book[] }>) => {
           state.status = "succeeded";
-          state.books[action.payload.query.query] = action.payload.books;
+          state.books[action.payload.query] = action.payload.books;
         }
       )
       .addCase(fetchBooksAsync.rejected, (state, action) => {
