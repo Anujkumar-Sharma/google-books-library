@@ -5,15 +5,16 @@ import BookList from "../components/BookList";
 import { Book } from "../types";
 import { useDebounce } from "../hooks/useDebounce";
 import { RootState } from "../store";
+import Modal from "../components/Modal";
+import { addBook } from "../store/personalBooksSlice"; // Import the addBook action
 import { fetchBooksAsync } from "../store/bookSlice";
 
-interface BookListPageProps {
-  onAdd: (book: Book) => void;
-}
+interface BookListPageProps {}
 
-const BookListPage = ({ onAdd }: BookListPageProps) => {
+const BookListPage = ({}: BookListPageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const dispatch = useDispatch();
   const books = useSelector(
@@ -45,28 +46,9 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
     }
   };
 
-  const getPageNumbers = () => {
-    const pages = [];
-    if (totalPages <= 5) {
-      for (let i = 0; i < totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (page <= 2) {
-        pages.push(0, 1, 2, 3, 4);
-      } else if (page >= totalPages - 3) {
-        pages.push(
-          totalPages - 5,
-          totalPages - 4,
-          totalPages - 3,
-          totalPages - 2,
-          totalPages - 1
-        );
-      } else {
-        pages.push(page - 2, page - 1, page, page + 1, page + 2);
-      }
-    }
-    return pages;
+  const handleAddBook = (book: Book) => {
+    dispatch(addBook(book)); // Dispatch the addBook action
+    setIsModalOpen(true);
   };
 
   return (
@@ -74,7 +56,7 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
       <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <BookList
         searchTerm={debouncedSearchTerm}
-        onAdd={onAdd}
+        onAdd={handleAddBook}
         books={books}
         status={status}
         error={error}
@@ -87,21 +69,20 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
           Previous
         </button>
         <div>
-          {page > 2 && totalPages > 5 && (
-            <button onClick={() => handlePageChange(0)}>1</button>
+          {Array.from(
+            { length: totalPages > 5 ? 5 : totalPages },
+            (_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index)}
+                className={`mx-1 ${page === index ? "font-bold" : ""}`}
+              >
+                {index + 1}
+              </button>
+            )
           )}
-          {page > 2 && totalPages > 5 && <span>...</span>}
-          {getPageNumbers().map((pageNumber) => (
-            <button
-              key={pageNumber}
-              onClick={() => handlePageChange(pageNumber)}
-              className={`mx-1 ${page === pageNumber ? "font-bold" : ""}`}
-            >
-              {pageNumber + 1}
-            </button>
-          ))}
-          {page < totalPages - 3 && totalPages > 5 && <span>...</span>}
-          {page < totalPages - 3 && totalPages > 5 && (
+          {totalPages > 5 && page < totalPages - 3 && <span>...</span>}
+          {totalPages > 5 && (
             <button onClick={() => handlePageChange(totalPages - 1)}>
               {totalPages}
             </button>
@@ -114,6 +95,12 @@ const BookListPage = ({ onAdd }: BookListPageProps) => {
           Next
         </button>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        title="Book Added"
+        message="The book has been added to your personal book list."
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
